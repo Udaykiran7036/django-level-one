@@ -45,13 +45,29 @@ def movies(request):
    if request.method=="GET":
        Movie_info=Movie_details.objects.all()
        movie_list=[]
+       rating_filter=request.GET.get("rating")
+       min_budget_filter=request.GET.get("min_budget")
+       max_budget_filter=request.GET.get("max_budget")
+       if rating_filter:
+           Movie_info=Movie_info.filter(rating__gte=float(rating_filter))
+           
        for movie in Movie_info:
+           if min_budget_filter or max_budget_filter:
+               budget_str=movie.budget.lower().replace("cr","")
+               budget_value=float(budget_str)
+
+               if min_budget_filter and budget_value<=float(min_budget_filter):
+                   continue #skip
+               if max_budget_filter and budget_value>=float(max_budget_filter):
+                   continue
            movie_list.append({
                "movie_name":movie.movie_name,
                "release_date":movie.release_date,
                "budget":movie.budget,
                "rating":movie.rating
            })
+           if len(movie_list)==0:
+               return JsonResponse({"status":"success","message":"no movies found matching the critiria"},status=200)
        return JsonResponse({"status":"success","data":movie_list},status=200)
    
    #PUT
@@ -99,3 +115,6 @@ def movies(request):
        existing_movie.delete()
        return JsonResponse({"status": "success", "message": "movie record deleted successfully"},status=200 )
    return JsonResponse({"error":"error occured"},status=400)
+
+
+
